@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通风空调设备清单定额编制及组价系统</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>通风空调设备清单定额编制及组价系统</h1>
+    <div class="upload-area">
+      <input type="file" id="excelFile" accept=".xlsx,.xls">
+      <label for="excelFile" class="upload-btn">选择Excel文件</label>
+      <p class="tip">支持.xlsx/.xls格式，需包含项目名称、风机类型、数量列</p>
+    </div>
+    <div class="result-area" id="resultArea" style="display: none;">
+      <div class="result-header">
+        <h2>生成结果</h2>
+        <button id="exportBtn" class="export-btn">导出Excel</button>
+      </div>
+      <div class="table-container">
+        <table id="resultTable">
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>清单编码</th>
+              <th>项目名称</th>
+              <th>风量</th>
+              <th>风机类型</th>
+              <th>定额编码</th>
+              <th>设备费（元）</th>
+              <th>数量</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="js/xlsx.full.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

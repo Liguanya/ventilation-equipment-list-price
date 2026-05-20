@@ -1,0 +1,104 @@
+body {
+  font-family: "Microsoft YaHei", sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f7fa;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+
+h1 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.upload-area {
+  text-align: center;
+  padding: 40px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+#excelFile {
+  display: none;
+}
+
+.upload-btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background-color: #409eff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.upload-btn:hover {
+  background-color: #66b1ff;
+}
+
+.tip {
+  color: #999;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.result-area {
+  margin-top: 30px;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.export-btn {
+  padding: 10px 25px;
+  background-color: #67c23a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.export-btn:hover {
+  background-color: #85ce61;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #ebeef5;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: #f9fafb;
+}
