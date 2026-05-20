@@ -43,8 +43,15 @@ function getListCode(projectName) {
 }
 
 function extractAirVolume(projectName) {
-  const match = projectName.match(/(\d+)\s*m³\/h/i);
+  const match = projectName.match(/(\d+)\s*m[3³]\/h/i);
   return match ? match[1] + 'm³/h' : '';
+}
+
+function generateProjectFeature(projectName, airVolume) {
+  return `1.名称：${projectName}
+2.规格：${airVolume || ''}
+3.包含：减震装置、落地设备基础、吊装设备支吊架及除锈刷油
+4.其他：满足招标图纸、招标文件、技术标准及相关图集规范要求`;
 }
 
 function getAirVolumeValue(airVolumeStr) {
@@ -163,14 +170,16 @@ document.getElementById('excelFile').addEventListener('change', function(e) {
       const row = jsonData[i];
       if (!row || row.length === 0) continue;
 
-      const projectName = row[0] || ''; // 第一列：项目名称
+      const projectName = row[0] || ''; // 第一列：风机信息/项目名称
       const fanType = row[1] || '';     // 第二列：风机类型
-      const quantity = row[2] || 1;     // 第三列：数量
+      const unit = row[2] || '台';      // 第三列：单位，无则默认台
+      const quantity = row[3] || 1;     // 第四列：数量
 
       const listCode = getListCode(projectName);
       const airVolume = extractAirVolume(projectName);
       const quotaCode = getQuotaCode(projectName, fanType, airVolume);
       const equipmentFee = getEquipmentFee(projectName, airVolume);
+      const projectFeature = generateProjectFeature(projectName, airVolume);
 
       resultData.push({
         index: i,
@@ -180,7 +189,9 @@ document.getElementById('excelFile').addEventListener('change', function(e) {
         fanType,
         quotaCode,
         equipmentFee,
-        quantity
+        unit,
+        quantity,
+        projectFeature
       });
     }
 
@@ -208,7 +219,9 @@ function renderTable(data) {
       <td>${row.fanType}</td>
       <td>${row.quotaCode}</td>
       <td>${row.equipmentFee || ''}</td>
+      <td>${row.unit}</td>
       <td>${row.quantity}</td>
+      <td style="white-space: pre-line; text-align: left; padding: 8px;">${row.projectFeature}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -222,7 +235,7 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   }
 
   const wsData = [
-    ['序号', '清单编码', '项目名称', '风量', '风机类型', '定额编码', '设备费（元）', '数量']
+    ['序号', '清单编码', '项目名称', '风量', '风机类型', '定额编码', '设备费（元）', '单位', '数量', '项目特征']
   ];
 
   window.exportData.forEach(row => {
@@ -234,7 +247,9 @@ document.getElementById('exportBtn').addEventListener('click', function() {
       row.fanType,
       row.quotaCode,
       row.equipmentFee,
-      row.quantity
+      row.unit,
+      row.quantity,
+      row.projectFeature
     ]);
   });
 
