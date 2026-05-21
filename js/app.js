@@ -270,7 +270,7 @@ function renderTable(data) {
   });
 }
 
-// 导出Excel（广联达可识别格式）
+// 导出Excel（广联达可识别格式 - 每清单项3行：清单行/定额行/未计价材行）
 document.getElementById('exportBtn').addEventListener('click', function() {
   if (!window.exportData || window.exportData.length === 0) {
     alert('没有数据可导出');
@@ -282,20 +282,57 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   ];
 
   window.exportData.forEach((row, idx) => {
-    const rowNum = idx + 2; // Excel行号，从第2行开始
+    const itemNum = idx + 1; // 清单项序号（1,2,3...）
+    const excelRow1 = wsData.length + 1; // 清单行Excel行号
+    const excelRow2 = excelRow1 + 1;    // 定额行Excel行号
+    const excelRow3 = excelRow1 + 2;    // 未计价材行Excel行号
+
+    // ===== 第1行：清单行 =====
     wsData.push([
-      row.index,                          // 1.序号
-      row.projectName,                    // 2.项目名称
-      row.airVolume,                      // 3.风量
-      row.fanType,                        // 4.风机类型
-      row.quantity,                       // 5.工程量（数量）
-      row.listCode,                       // 6.项目编码（清单编码）
-      '清单行',                           // 7.固定值"清单行"
-      row.projectName,                    // 8.名称（重复第2列）
-      row.projectFeature,                 // 9.项目特征
-      row.unit,                           // 10.单位
-      { f: `=E${rowNum}` },               // 11.工程量（公式引用第5列）
-      row.equipmentFee || ''              // 12.主材单价（设备费）
+      itemNum,                            // A列：序号
+      row.projectName,                    // B列：项目名称
+      row.airVolume,                      // C列：风量
+      row.fanType,                        // D列：风机类型
+      row.quantity,                       // E列：工程量（数量）
+      row.listCode,                       // F列：清单编码
+      '清单行',                           // G列：固定"清单行"
+      row.projectName,                    // H列：项目名称（同B列）
+      row.projectFeature,                 // I列：项目特征
+      row.unit,                           // J列：单位
+      { f: `=E${excelRow1}` },            // K列：工程量（公式引用E列）
+      row.equipmentFee || ''              // L列：主材单价（设备费）
+    ]);
+
+    // ===== 第2行：定额行 =====
+    wsData.push([
+      `${itemNum}.1`,                     // A列：序号.1
+      '',                                 // B列：空
+      '',                                 // C列：空
+      '',                                 // D列：空
+      '',                                 // E列：空
+      row.quotaCode,                      // F列：定额编码
+      '定额行',                           // G列：固定"定额行"
+      row.quotaName,                      // H列：定额名称
+      '',                                 // I列：空
+      { f: `=J${excelRow1}` },            // J列：单位（公式引用上一行J列）
+      { f: `=K${excelRow1}` },            // K列：工程量（公式引用上一行K列）
+      ''                                  // L列：空
+    ]);
+
+    // ===== 第3行：未计价材行 =====
+    wsData.push([
+      `${itemNum}.2`,                     // A列：序号.2
+      '',                                 // B列：空
+      '',                                 // C列：空
+      '',                                 // D列：空
+      '',                                 // E列：空
+      `Z00741-${String(itemNum).padStart(3, '0')}`, // F列：Z00741-001, Z00741-002...
+      '未计价材行',                       // G列：固定"未计价材行"
+      { f: `=H${excelRow1}` },            // H列：项目名称（公式引用清单行H列）
+      '',                                 // I列：空
+      { f: `=J${excelRow2}` },            // J列：单位（公式引用定额行J列）
+      { f: `=K${excelRow2}` },            // K列：工程量（公式引用定额行K列）
+      row.equipmentFee || ''              // L列：主材单价（设备费）
     ]);
   });
 
