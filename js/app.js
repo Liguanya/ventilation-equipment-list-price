@@ -270,7 +270,7 @@ function renderTable(data) {
   });
 }
 
-// 导出Excel
+// 导出Excel（广联达可识别格式）
 document.getElementById('exportBtn').addEventListener('click', function() {
   if (!window.exportData || window.exportData.length === 0) {
     alert('没有数据可导出');
@@ -278,22 +278,24 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   }
 
   const wsData = [
-    ['序号', '清单编码', '项目名称', '风量', '风机类型', '定额编码', '定额名称', '设备费（元）', '单位', '数量', '项目特征']
+    ['序号', '项目名称', '风量', '风机类型', '工程量', '项目编码', '', '名称', '项目特征', '单位', '工程量', '主材单价']
   ];
 
-  window.exportData.forEach(row => {
+  window.exportData.forEach((row, idx) => {
+    const rowNum = idx + 2; // Excel行号，从第2行开始
     wsData.push([
-      row.index,
-      row.listCode,
-      row.projectName,
-      row.airVolume,
-      row.fanType,
-      row.quotaCode,
-      row.quotaName,
-      row.equipmentFee,
-      row.unit,
-      row.quantity,
-      row.projectFeature
+      row.index,                          // 1.序号
+      row.projectName,                    // 2.项目名称
+      row.airVolume,                      // 3.风量
+      row.fanType,                        // 4.风机类型
+      row.quantity,                       // 5.工程量（数量）
+      row.listCode,                       // 6.项目编码（清单编码）
+      '清单行',                           // 7.固定值"清单行"
+      row.projectName,                    // 8.名称（重复第2列）
+      row.projectFeature,                 // 9.项目特征
+      row.unit,                           // 10.单位
+      { f: `=E${rowNum}` },               // 11.工程量（公式引用第5列）
+      row.equipmentFee || ''              // 12.主材单价（设备费）
     ]);
   });
 
