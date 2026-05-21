@@ -152,6 +152,46 @@ function getEquipmentFee(projectName, airVolumeStr) {
   return '';
 }
 
+function getQuotaName(quotaCode) {
+  const quotaMap = {
+    '9-230': '空气加热器（冷却器）安装',
+    '9-233': '离心式通风机安装 风量4500m³/h以内',
+    '9-234': '离心式通风机安装 风量10000m³/h以内',
+    '9-235': '离心式通风机安装 风量20000m³/h以内',
+    '9-236': '离心式通风机安装 风量50000m³/h以内',
+    '9-237': '离心式通风机安装 风量123000m³/h以内',
+    '9-238': '离心式通风机安装 风量123000m³/h以外',
+    '9-239': '轴流式、斜流式、混流式通风机安装 风量8900m³/h以内',
+    '9-240': '轴流式、斜流式、混流式通风机安装 风量25000m³/h以内',
+    '9-241': '轴流式、斜流式、混流式通风机安装 风量63000m³/h以内',
+    '9-242': '轴流式、斜流式、混流式通风机安装 风量140000m³/h以内',
+    '9-243': '轴流式、斜流式、混流式通风机安装 风量140000m³/h以外',
+    '9-247': '卫生间通风器安装',
+    '9-248': '吊顶式空调器安装 质量0.15t以内',
+    '9-251': '落地式空调器安装 质量1.0t以内',
+    '9-254': '墙上式空调器安装 质量0.1t以内',
+    '9-257': '组合式空调机组安装 风量4000m³/h以内',
+    '9-258': '组合式空调机组安装 风量10000m³/h以内',
+    '9-259': '组合式空调机组安装 风量20000m³/h以内',
+    '9-260': '组合式空调机组安装 风量40000m³/h以内',
+    '9-261': '组合式空调机组安装 风量60000m³/h以内',
+    '9-262': '组合式空调机组安装 风量80000m³/h以内',
+    '9-263': '组合式空调机组安装 风量100000m³/h以内',
+    '9-264': '组合式空调机组安装 风量100000m³/h以外',
+    '9-265': '风机盘管安装 落地式',
+    '9-266': '风机盘管安装 吊顶式',
+    '9-267': '风机盘管安装 壁挂式',
+    '9-268': '风机盘管安装 卡式',
+    '9-269': '变风量末端装置安装',
+    '9-271': '组合式油烟净化机组安装 风量3000m³/h以内',
+    '9-272': '组合式油烟净化机组安装 风量10000m³/h以内',
+    '9-273': '组合式油烟净化机组安装 风量30000m³/h以内',
+    '9-274': '组合式油烟净化机组安装 风量60000m³/h以内',
+    '9-275': '除尘设备安装 质量100kg以内'
+  };
+  return quotaMap[quotaCode] || '';
+}
+
 // 处理Excel上传
 document.getElementById('excelFile').addEventListener('change', function(e) {
   const file = e.target.files[0];
@@ -178,6 +218,7 @@ document.getElementById('excelFile').addEventListener('change', function(e) {
       const listCode = getListCode(projectName);
       const airVolume = extractAirVolume(projectName);
       const quotaCode = getQuotaCode(projectName, fanType, airVolume);
+      const quotaName = getQuotaName(quotaCode);
       const equipmentFee = getEquipmentFee(projectName, airVolume);
       const projectFeature = generateProjectFeature(projectName, airVolume);
 
@@ -188,6 +229,7 @@ document.getElementById('excelFile').addEventListener('change', function(e) {
         airVolume,
         fanType,
         quotaCode,
+        quotaName,
         equipmentFee,
         unit,
         quantity,
@@ -218,6 +260,7 @@ function renderTable(data) {
       <td>${row.airVolume}</td>
       <td>${row.fanType}</td>
       <td>${row.quotaCode}</td>
+      <td>${row.quotaName}</td>
       <td>${row.equipmentFee || ''}</td>
       <td>${row.unit}</td>
       <td>${row.quantity}</td>
@@ -235,7 +278,7 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   }
 
   const wsData = [
-    ['序号', '清单编码', '项目名称', '风量', '风机类型', '定额编码', '设备费（元）', '单位', '数量', '项目特征']
+    ['序号', '清单编码', '项目名称', '风量', '风机类型', '定额编码', '定额名称', '设备费（元）', '单位', '数量', '项目特征']
   ];
 
   window.exportData.forEach(row => {
@@ -246,6 +289,7 @@ document.getElementById('exportBtn').addEventListener('click', function() {
       row.airVolume,
       row.fanType,
       row.quotaCode,
+      row.quotaName,
       row.equipmentFee,
       row.unit,
       row.quantity,
