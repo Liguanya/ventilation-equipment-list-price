@@ -47,11 +47,38 @@ function extractAirVolume(projectName) {
   return match ? match[1] + 'm³/h' : '';
 }
 
-function generateProjectFeature(projectName, airVolume) {
+// 生成广联达格式项目特征
+function generateProjectFeature_GLodon(projectName, airVolume) {
   return `1.名称：${projectName}
 2.规格：${airVolume || ''}
 3.包含：减震装置、落地设备基础、吊装设备支吊架及除锈刷油
 4.其他：满足招标图纸、招标文件、技术标准及相关图集规范要求`;
+}
+
+// 生成建经科技格式项目特征
+function generateProjectFeature_JianJing(projectName) {
+  return `项目特征：
+1.${projectName}
+2.其他详见招标文件、设计图纸及相关规范
+工程内容：
+1.购置、安装
+2.控制箱及控制箱至设备管线购置、安装
+3.设备支架制作、安装
+4.金属结构除锈刷油
+5.设置橡胶隔振垫、减震器或减震吊架
+6.参照图纸及招标文件的技术要求
+7.满足施工及验收相关规范要求
+8.为完成该项工作内容所需的辅助工作请投标人在综合单价中考虑，达到竣工交验标准`;
+}
+
+// 根据当前选择的软件格式生成项目特征
+function generateProjectFeature(projectName, airVolume) {
+  const format = document.getElementById('formatSelect').value;
+  if (format === 'jianjing') {
+    return generateProjectFeature_JianJing(projectName);
+  } else {
+    return generateProjectFeature_GLodon(projectName, airVolume);
+  }
 }
 
 function getAirVolumeValue(airVolumeStr) {
@@ -270,74 +297,118 @@ function renderTable(data) {
   });
 }
 
-// 导出Excel（广联达可识别格式 - 每清单项3行：清单行/定额行/未计价材行）
+// 导出Excel - 根据选择的软件格式（广联达/建经科技）
 document.getElementById('exportBtn').addEventListener('click', function() {
   if (!window.exportData || window.exportData.length === 0) {
     alert('没有数据可导出');
     return;
   }
 
-  const wsData = [
-    ['序号', '项目名称', '风量', '风机类型', '工程量', '项目编码', '', '名称', '项目特征', '单位', '工程量', '主材单价']
-  ];
+  const format = document.getElementById('formatSelect').value;
+  
+  if (format === 'jianjing') {
+    // ===== 建经科技格式 - 简单1行格式 =====
+    const wsData = [
+      ['序号', '清单编码', '项目名称', '风量', '风机类型', '风机类型', '定额编码', '定额名称', '设备费（元）', '单位', '数量', '项目特征']
+    ];
 
-  window.exportData.forEach((row, idx) => {
-    const itemNum = idx + 1; // 清单项序号（1,2,3...）
-    const excelRow1 = wsData.length + 1; // 清单行Excel行号
-    const excelRow2 = excelRow1 + 1;    // 定额行Excel行号
-    const excelRow3 = excelRow1 + 2;    // 未计价材行Excel行号
+    window.exportData.forEach(row => {
+      wsData.push([
+        row.index,                          // A列：序号
+        row.listCode,                       // B列：清单编码
+        row.projectName,                    // C列：项目名称
+        row.airVolume,                      // D列：风量
+        row.fanType,                        // E列：风机类型
+        row.fanType,                        // F列：风机类型（重复）
+        row.quotaCode,                      // G列：定额编码
+        row.quotaName,                      // H列：定额名称
+        row.equipmentFee || '',             // I列：设备费
+        row.unit,                           // J列：单位
+        row.quantity,                       // K列：数量
+        row.projectFeature                  // L列：项目特征
+      ]);
+    });
 
-    // ===== 第1行：清单行 =====
-    wsData.push([
-      itemNum,                            // A列：序号
-      row.projectName,                    // B列：项目名称
-      row.airVolume,                      // C列：风量
-      row.fanType,                        // D列：风机类型
-      row.quantity,                       // E列：工程量（数量）
-      row.listCode,                       // F列：清单编码
-      '清单行',                           // G列：固定"清单行"
-      row.projectName,                    // H列：项目名称（同B列）
-      row.projectFeature,                 // I列：项目特征
-      row.unit,                           // J列：单位
-      { f: `=E${excelRow1}` },            // K列：工程量（公式引用E列）
-      row.equipmentFee || ''              // L列：主材单价（设备费）
-    ]);
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '通风空调设备清单');
+    XLSX.writeFile(wb, '通风空调设备清单定额结果_建经科技.xlsx');
 
-    // ===== 第2行：定额行 =====
-    wsData.push([
-      `${itemNum}.1`,                     // A列：序号.1
-      '',                                 // B列：空
-      '',                                 // C列：空
-      '',                                 // D列：空
-      '',                                 // E列：空
-      row.quotaCode,                      // F列：定额编码
-      '定额行',                           // G列：固定"定额行"
-      row.quotaName,                      // H列：定额名称
-      '',                                 // I列：空
-      { f: `=J${excelRow1}` },            // J列：单位（公式引用上一行J列）
-      { f: `=K${excelRow1}` },            // K列：工程量（公式引用上一行K列）
-      ''                                  // L列：空
-    ]);
+  } else {
+    // ===== 广联达格式 - 每清单项3行格式 =====
+    const wsData = [
+      ['序号', '项目名称', '风量', '风机类型', '工程量', '项目编码', '', '名称', '项目特征', '单位', '工程量', '主材单价']
+    ];
 
-    // ===== 第3行：未计价材行 =====
-    wsData.push([
-      `${itemNum}.2`,                     // A列：序号.2
-      '',                                 // B列：空
-      '',                                 // C列：空
-      '',                                 // D列：空
-      '',                                 // E列：空
-      `Z00741-${String(itemNum).padStart(3, '0')}`, // F列：Z00741-001, Z00741-002...
-      '未计价材行',                       // G列：固定"未计价材行"
-      { f: `=H${excelRow1}` },            // H列：项目名称（公式引用清单行H列）
-      '',                                 // I列：空
-      { f: `=J${excelRow2}` },            // J列：单位（公式引用定额行J列）
-      { f: `=K${excelRow2}` },            // K列：工程量（公式引用定额行K列）
-      row.equipmentFee || ''              // L列：主材单价（设备费）
-    ]);
-  });
+    window.exportData.forEach((row, idx) => {
+      const itemNum = idx + 1; // 清单项序号（1,2,3...）
+      const excelRow1 = wsData.length + 1; // 清单行Excel行号
+      const excelRow2 = excelRow1 + 1;    // 定额行Excel行号
+      const excelRow3 = excelRow1 + 2;    // 未计价材行Excel行号
 
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '通风空调设备清单');
-  XLSX.writeFile(wb, '通风空调设备清单定额结果.xlsx');
+      // ===== 第1行：清单行 =====
+      wsData.push([
+        itemNum,                            // A列：序号
+        row.projectName,                    // B列：项目名称
+        row.airVolume,                      // C列：风量
+        row.fanType,                        // D列：风机类型
+        row.quantity,                       // E列：工程量（数量）
+        row.listCode,                       // F列：清单编码
+        '清单行',                           // G列：固定"清单行"
+        row.projectName,                    // H列：项目名称（同B列）
+        row.projectFeature,                 // I列：项目特征
+        row.unit,                           // J列：单位
+        { f: `=E${excelRow1}` },            // K列：工程量（公式引用E列）
+        row.equipmentFee || ''              // L列：主材单价（设备费）
+      ]);
+
+      // ===== 第2行：定额行 =====
+      wsData.push([
+        `${itemNum}.1`,                     // A列：序号.1
+        '',                                 // B列：空
+        '',                                 // C列：空
+        '',                                 // D列：空
+        '',                                 // E列：空
+        row.quotaCode,                      // F列：定额编码
+        '定额行',                           // G列：固定"定额行"
+        row.quotaName,                      // H列：定额名称
+        '',                                 // I列：空
+        { f: `=J${excelRow1}` },            // J列：单位（公式引用上一行J列）
+        { f: `=K${excelRow1}` },            // K列：工程量（公式引用上一行K列）
+        ''                                  // L列：空
+      ]);
+
+      // ===== 第3行：未计价材行 =====
+      wsData.push([
+        `${itemNum}.2`,                     // A列：序号.2
+        '',                                 // B列：空
+        '',                                 // C列：空
+        '',                                 // D列：空
+        '',                                 // E列：空
+        `Z00741-${String(itemNum).padStart(3, '0')}`, // F列：Z00741-001, Z00741-002...
+        '未计价材行',                       // G列：固定"未计价材行"
+        { f: `=H${excelRow1}` },            // H列：项目名称（公式引用清单行H列）
+        '',                                 // I列：空
+        { f: `=J${excelRow2}` },            // J列：单位（公式引用定额行J列）
+        { f: `=K${excelRow2}` },            // K列：工程量（公式引用定额行K列）
+        row.equipmentFee || ''              // L列：主材单价（设备费）
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '通风空调设备清单');
+    XLSX.writeFile(wb, '通风空调设备清单定额结果_广联达.xlsx');
+  }
+});
+
+// 格式选择变化时重新生成表格
+document.getElementById('formatSelect').addEventListener('change', function() {
+  if (window.exportData && window.exportData.length > 0) {
+    // 重新生成项目特征
+    window.exportData.forEach(row => {
+      row.projectFeature = generateProjectFeature(row.projectName, row.airVolume);
+    });
+    renderTable(window.exportData);
+  }
 });

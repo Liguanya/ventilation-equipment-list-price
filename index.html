@@ -14,6 +14,13 @@
       <label for="excelFile" class="upload-btn">选择Excel文件</label>
       <p class="tip">支持.xlsx/.xls格式，需包含项目名称、风机类型、数量列</p>
     </div>
+    <div class="format-select-area">
+      <label for="formatSelect">选择导出格式：</label>
+      <select id="formatSelect" class="format-select">
+        <option value="glodon">广联达格式</option>
+        <option value="jianjing">建经科技格式</option>
+      </select>
+    </div>
     <div class="result-area" id="resultArea" style="display: none;">
       <div class="result-header">
         <h2>生成结果</h2>

@@ -52,6 +52,40 @@ h1 {
   font-size: 14px;
 }
 
+.format-select-area {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 15px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+.format-select-area label {
+  margin-right: 10px;
+  font-weight: 500;
+  color: #606266;
+}
+
+.format-select {
+  padding: 10px 20px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #606266;
+  background-color: white;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.format-select:hover {
+  border-color: #c0c4cc;
+}
+
+.format-select:focus {
+  outline: none;
+  border-color: #409eff;
+}
+
 .result-area {
   margin-top: 30px;
 }
