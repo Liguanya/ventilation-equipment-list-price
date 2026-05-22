@@ -169,14 +169,146 @@ function getQuotaCode(projectName, fanType, airVolumeStr) {
   return '';
 }
 
-function getEquipmentFee(projectName, airVolumeStr) {
+// 设备价格数据库（国产中高档品牌，2026年市场参考价）
+const equipmentPriceDB = {
+  // 风机类 - 亿利达品牌（国产中高档）
+  fan_yilida: [
+    { minAirVolume: 0, maxAirVolume: 5000, price: 1800, brand: '亿利达' },
+    { minAirVolume: 5000, maxAirVolume: 10000, price: 3200, brand: '亿利达' },
+    { minAirVolume: 10000, maxAirVolume: 15000, price: 4800, brand: '亿利达' },
+    { minAirVolume: 15000, maxAirVolume: 20000, price: 6500, brand: '亿利达' },
+    { minAirVolume: 20000, maxAirVolume: 30000, price: 9200, brand: '亿利达' },
+    { minAirVolume: 30000, maxAirVolume: 40000, price: 12500, brand: '亿利达' },
+    { minAirVolume: 40000, maxAirVolume: 50000, price: 16800, brand: '亿利达' },
+    { minAirVolume: 50000, maxAirVolume: 60000, price: 21000, brand: '亿利达' },
+    { minAirVolume: 60000, maxAirVolume: 80000, price: 28500, brand: '亿利达' },
+    { minAirVolume: 80000, maxAirVolume: 100000, price: 36000, brand: '亿利达' },
+    { minAirVolume: 100000, maxAirVolume: 150000, price: 48000, brand: '亿利达' }
+  ],
+  
+  // 组合式空调机组 - 约克品牌（国际中高档）
+  ahu_york: [
+    { minAirVolume: 0, maxAirVolume: 4000, price: 12500, brand: '约克' },
+    { minAirVolume: 4000, maxAirVolume: 8000, price: 22000, brand: '约克' },
+    { minAirVolume: 8000, maxAirVolume: 12000, price: 32000, brand: '约克' },
+    { minAirVolume: 12000, maxAirVolume: 20000, price: 48000, brand: '约克' },
+    { minAirVolume: 20000, maxAirVolume: 30000, price: 68000, brand: '约克' },
+    { minAirVolume: 30000, maxAirVolume: 40000, price: 92000, brand: '约克' },
+    { minAirVolume: 40000, maxAirVolume: 60000, price: 128000, brand: '约克' },
+    { minAirVolume: 60000, maxAirVolume: 80000, price: 165000, brand: '约克' },
+    { minAirVolume: 80000, maxAirVolume: 100000, price: 210000, brand: '约克' }
+  ],
+  
+  // 新风机组 - 麦克维尔品牌（国际中高档）
+  fcu_mcquay: [
+    { minAirVolume: 0, maxAirVolume: 2000, price: 6800, brand: '麦克维尔' },
+    { minAirVolume: 2000, maxAirVolume: 4000, price: 11500, brand: '麦克维尔' },
+    { minAirVolume: 4000, maxAirVolume: 6000, price: 16200, brand: '麦克维尔' },
+    { minAirVolume: 6000, maxAirVolume: 10000, price: 24500, brand: '麦克维尔' },
+    { minAirVolume: 10000, maxAirVolume: 15000, price: 35000, brand: '麦克维尔' },
+    { minAirVolume: 15000, maxAirVolume: 20000, price: 46000, brand: '麦克维尔' }
+  ],
+  
+  // 风机盘管 - 开利品牌（国际中高档）
+  fcu_carrier: [
+    { type: 'FP-34', price: 850, brand: '开利' },
+    { type: 'FP-51', price: 980, brand: '开利' },
+    { type: 'FP-68', price: 1150, brand: '开利' },
+    { type: 'FP-85', price: 1350, brand: '开利' },
+    { type: 'FP-102', price: 1580, brand: '开利' },
+    { type: 'FP-136', price: 1850, brand: '开利' },
+    { type: 'FP-170', price: 2200, brand: '开利' },
+    { type: 'FP-204', price: 2650, brand: '开利' },
+    { type: 'FP-238', price: 3100, brand: '开利' }
+  ],
+  
+  // 排气扇/卫生间通风器 - 正野品牌（国产中高档）
+  exhaust_fan: [
+    { type: 'BPT12-14C', price: 280, brand: '正野' },
+    { type: 'BPT15-23C', price: 360, brand: '正野' },
+    { type: 'BPT18-34C', price: 450, brand: '正野' },
+    { type: 'DPT15-42A', price: 580, brand: '正野' },
+    { type: 'DPT20-54A', price: 720, brand: '正野' }
+  ],
+  
+  // 油烟净化机组 - 科蓝品牌（国产中高档）
+  fume_purifier: [
+    { minAirVolume: 0, maxAirVolume: 4000, price: 8500, brand: '科蓝' },
+    { minAirVolume: 4000, maxAirVolume: 8000, price: 15800, brand: '科蓝' },
+    { minAirVolume: 8000, maxAirVolume: 12000, price: 24500, brand: '科蓝' },
+    { minAirVolume: 12000, maxAirVolume: 20000, price: 38000, brand: '科蓝' },
+    { minAirVolume: 20000, maxAirVolume: 30000, price: 55000, brand: '科蓝' },
+    { minAirVolume: 30000, maxAirVolume: 50000, price: 85000, brand: '科蓝' }
+  ]
+};
+
+// 获取设备价格及品牌信息
+function getEquipmentPriceInfo(projectName, airVolumeStr) {
   const name = projectName;
+  const airVolume = getAirVolumeValue(airVolumeStr);
+  
+  // 1. 风机类 - 亿利达品牌
   const isFanType = ['送风', '排风', '补风', '排烟', '加压', '通风', '风机'].some(k => name.includes(k));
   if (isFanType) {
-    const airVolume = getAirVolumeValue(airVolumeStr);
-    return airVolume * 0.4;
+    const priceItem = equipmentPriceDB.fan_yilida.find(item => 
+      airVolume >= item.minAirVolume && airVolume < item.maxAirVolume
+    ) || equipmentPriceDB.fan_yilida[equipmentPriceDB.fan_yilida.length - 1];
+    return { price: priceItem.price, brand: priceItem.brand };
   }
-  return '';
+  
+  // 2. 组合式空调机组 - 约克品牌
+  if (name.includes('组合式') || name.includes('空调机组')) {
+    const priceItem = equipmentPriceDB.ahu_york.find(item => 
+      airVolume >= item.minAirVolume && airVolume < item.maxAirVolume
+    ) || equipmentPriceDB.ahu_york[equipmentPriceDB.ahu_york.length - 1];
+    return { price: priceItem.price, brand: priceItem.brand };
+  }
+  
+  // 3. 新风机组 - 麦克维尔品牌
+  if (name.includes('新风')) {
+    const priceItem = equipmentPriceDB.fcu_mcquay.find(item => 
+      airVolume >= item.minAirVolume && airVolume < item.maxAirVolume
+    ) || equipmentPriceDB.fcu_mcquay[equipmentPriceDB.fcu_mcquay.length - 1];
+    return { price: priceItem.price, brand: priceItem.brand };
+  }
+  
+  // 4. 风机盘管 - 开利品牌
+  if (name.includes('风机盘管') || name.includes('风盘')) {
+    // 尝试从名称中提取FP型号
+    const fpMatch = name.match(/FP-(\d+)/i);
+    if (fpMatch) {
+      const fpType = `FP-${fpMatch[1]}`;
+      const priceItem = equipmentPriceDB.fcu_carrier.find(item => item.type === fpType);
+      if (priceItem) return { price: priceItem.price, brand: priceItem.brand };
+    }
+    // 默认FP-85
+    return { price: 1350, brand: '开利' };
+  }
+  
+  // 5. 排气扇/卫生间通风器 - 正野品牌
+  if (name.includes('卫生间') || name.includes('排气扇') || name.includes('排风扇')) {
+    return { price: 360, brand: '正野' };
+  }
+  
+  // 6. 油烟净化机组 - 科蓝品牌
+  if (name.includes('油烟') || name.includes('净化')) {
+    const priceItem = equipmentPriceDB.fume_purifier.find(item => 
+      airVolume >= item.minAirVolume && airVolume < item.maxAirVolume
+    ) || equipmentPriceDB.fume_purifier[equipmentPriceDB.fume_purifier.length - 1];
+    return { price: priceItem.price, brand: priceItem.brand };
+  }
+  
+  return { price: '', brand: '' };
+}
+
+function getEquipmentFee(projectName, airVolumeStr) {
+  const priceInfo = getEquipmentPriceInfo(projectName, airVolumeStr);
+  return priceInfo.price;
+}
+
+function getEquipmentBrand(projectName, airVolumeStr) {
+  const priceInfo = getEquipmentPriceInfo(projectName, airVolumeStr);
+  return priceInfo.brand;
 }
 
 function getQuotaName(quotaCode) {
@@ -247,6 +379,7 @@ document.getElementById('excelFile').addEventListener('change', function(e) {
       const quotaCode = getQuotaCode(projectName, fanType, airVolume);
       const quotaName = getQuotaName(quotaCode);
       const equipmentFee = getEquipmentFee(projectName, airVolume);
+      const equipmentBrand = getEquipmentBrand(projectName, airVolume);
       const projectFeature = generateProjectFeature(projectName, airVolume);
 
       resultData.push({
@@ -258,6 +391,7 @@ document.getElementById('excelFile').addEventListener('change', function(e) {
         quotaCode,
         quotaName,
         equipmentFee,
+        equipmentBrand,
         unit,
         quantity,
         projectFeature
@@ -286,6 +420,7 @@ function renderTable(data) {
       <td>${row.projectName}</td>
       <td>${row.airVolume}</td>
       <td>${row.fanType}</td>
+      <td>${row.equipmentBrand || ''}</td>
       <td>${row.quotaCode}</td>
       <td>${row.quotaName}</td>
       <td>${row.equipmentFee || ''}</td>
@@ -296,6 +431,17 @@ function renderTable(data) {
     tbody.appendChild(tr);
   });
 }
+
+// 格式切换时重新渲染表格
+document.getElementById('formatSelect').addEventListener('change', function() {
+  if (window.exportData && window.exportData.length > 0) {
+    // 重新生成项目特征并渲染表格
+    window.exportData.forEach(row => {
+      row.projectFeature = generateProjectFeature(row.projectName, row.airVolume);
+    });
+    renderTable(window.exportData);
+  }
+});
 
 // 导出Excel - 根据选择的软件格式（广联达/建经科技）
 document.getElementById('exportBtn').addEventListener('click', function() {
@@ -309,7 +455,7 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   if (format === 'jianjing') {
     // ===== 建经科技格式 - 简单1行格式 =====
     const wsData = [
-      ['序号', '清单编码', '项目名称', '风量', '风机类型', '风机类型', '定额编码', '定额名称', '设备费（元）', '单位', '数量', '项目特征']
+      ['序号', '清单编码', '项目名称', '风量', '风机类型', '风机类型', '品牌', '定额编码', '定额名称', '设备费（元）', '单位', '数量', '项目特征']
     ];
 
     window.exportData.forEach(row => {
@@ -320,12 +466,13 @@ document.getElementById('exportBtn').addEventListener('click', function() {
         row.airVolume,                      // D列：风量
         row.fanType,                        // E列：风机类型
         row.fanType,                        // F列：风机类型（重复）
-        row.quotaCode,                      // G列：定额编码
-        row.quotaName,                      // H列：定额名称
-        row.equipmentFee || '',             // I列：设备费
-        row.unit,                           // J列：单位
-        row.quantity,                       // K列：数量
-        row.projectFeature                  // L列：项目特征
+        row.equipmentBrand || '',           // G列：品牌
+        row.quotaCode,                      // H列：定额编码
+        row.quotaName,                      // I列：定额名称
+        row.equipmentFee || '',             // J列：设备费
+        row.unit,                           // K列：单位
+        row.quantity,                       // L列：数量
+        row.projectFeature                  // M列：项目特征
       ]);
     });
 
@@ -337,7 +484,7 @@ document.getElementById('exportBtn').addEventListener('click', function() {
   } else {
     // ===== 广联达格式 - 每清单项3行格式 =====
     const wsData = [
-      ['序号', '项目名称', '风量', '风机类型', '工程量', '项目编码', '', '名称', '项目特征', '单位', '工程量', '主材单价']
+      ['序号', '项目名称', '风量', '风机类型', '品牌', '工程量', '项目编码', '', '名称', '项目特征', '单位', '工程量', '主材单价']
     ];
 
     window.exportData.forEach((row, idx) => {
@@ -352,14 +499,15 @@ document.getElementById('exportBtn').addEventListener('click', function() {
         row.projectName,                    // B列：项目名称
         row.airVolume,                      // C列：风量
         row.fanType,                        // D列：风机类型
-        row.quantity,                       // E列：工程量（数量）
-        row.listCode,                       // F列：清单编码
-        '清单行',                           // G列：固定"清单行"
-        row.projectName,                    // H列：项目名称（同B列）
-        row.projectFeature,                 // I列：项目特征
-        row.unit,                           // J列：单位
-        { f: `=E${excelRow1}` },            // K列：工程量（公式引用E列）
-        row.equipmentFee || ''              // L列：主材单价（设备费）
+        row.equipmentBrand || '',           // E列：品牌
+        row.quantity,                       // F列：工程量（数量）
+        row.listCode,                       // G列：清单编码
+        '清单行',                           // H列：固定"清单行"
+        row.projectName,                    // I列：项目名称（同B列）
+        row.projectFeature,                 // J列：项目特征
+        row.unit,                           // K列：单位
+        { f: `=F${excelRow1}` },            // L列：工程量（公式引用F列）
+        row.equipmentFee || ''              // M列：主材单价（设备费）
       ]);
 
       // ===== 第2行：定额行 =====
@@ -369,13 +517,14 @@ document.getElementById('exportBtn').addEventListener('click', function() {
         '',                                 // C列：空
         '',                                 // D列：空
         '',                                 // E列：空
-        row.quotaCode,                      // F列：定额编码
-        '定额行',                           // G列：固定"定额行"
-        row.quotaName,                      // H列：定额名称
-        '',                                 // I列：空
-        { f: `=J${excelRow1}` },            // J列：单位（公式引用上一行J列）
-        { f: `=K${excelRow1}` },            // K列：工程量（公式引用上一行K列）
-        ''                                  // L列：空
+        '',                                 // F列：空
+        row.quotaCode,                      // G列：定额编码
+        '定额行',                           // H列：固定"定额行"
+        row.quotaName,                      // I列：定额名称
+        '',                                 // J列：空
+        { f: `=K${excelRow1}` },            // K列：单位（公式引用上一行K列）
+        { f: `=L${excelRow1}` },            // L列：工程量（公式引用上一行L列）
+        ''                                  // M列：空
       ]);
 
       // ===== 第3行：未计价材行 =====
@@ -385,13 +534,14 @@ document.getElementById('exportBtn').addEventListener('click', function() {
         '',                                 // C列：空
         '',                                 // D列：空
         '',                                 // E列：空
-        `Z00741-${String(itemNum).padStart(3, '0')}`, // F列：Z00741-001, Z00741-002...
-        '未计价材行',                       // G列：固定"未计价材行"
-        { f: `=H${excelRow1}` },            // H列：项目名称（公式引用清单行H列）
-        '',                                 // I列：空
-        { f: `=J${excelRow2}` },            // J列：单位（公式引用定额行J列）
-        { f: `=K${excelRow2}` },            // K列：工程量（公式引用定额行K列）
-        row.equipmentFee || ''              // L列：主材单价（设备费）
+        '',                                 // F列：空
+        `Z00741-${String(itemNum).padStart(3, '0')}`, // G列：Z00741-001, Z00741-002...
+        '未计价材行',                       // H列：固定"未计价材行"
+        { f: `=I${excelRow1}` },            // I列：项目名称（公式引用清单行I列）
+        '',                                 // J列：空
+        { f: `=K${excelRow2}` },            // K列：单位（公式引用定额行K列）
+        { f: `=L${excelRow2}` },            // L列：工程量（公式引用定额行L列）
+        row.equipmentFee || ''              // M列：主材单价（设备费）
       ]);
     });
 
